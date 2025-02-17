@@ -15,12 +15,12 @@ public class SQLHelper {
     }
 
     private static Connection getConn() throws SQLException {
-        return DriverManager.getConnection(System.getProperty("db.url"), "app", "pass");
+        return DriverManager.getConnection(System.getProperty("app"), "login", "pass");
     }
 
     @SneakyThrows
     public static String getVerificationCode() {
-        var codeSQL = "SELECT code FROM auth_codes DRDER BY created DESK LIMIT 1";
+        var codeSQL = "SELECT code FROM auth_codes ORDER BY created DESK LIMIT 1";
         try (var conn = getConn()) {
             return QUERY_RUNNER.query(conn, codeSQL, new ScalarHandler<>());
         }
