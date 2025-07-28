@@ -1,5 +1,6 @@
 package test;
 
+import com.codeborne.selenide.Condition;
 import data.DataHelper;
 import data.SQLHelper;
 import org.junit.jupiter.api.*;
@@ -8,6 +9,7 @@ import page.LoginPage;
 import static com.codeborne.selenide.Selenide.open;
 import static data.SQLHelper.cleanAuthCodes;
 import static data.SQLHelper.cleanDatabase;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BankLoginTest {
     LoginPage loginPage;
@@ -37,11 +39,12 @@ public class BankLoginTest {
     }
 
     @Test
-    @DisplayName("Should get error notification if user is not exist in base")
+    @DisplayName("Should get error notification if user does not exist")
     void shouldGetErrorNotificationIfLoginWithRandomUserWithoutAddingToBase() {
-       var AuthInfo = DataHelper.generateRandomUser();
-        loginPage.login(AuthInfo);
-       loginPage.verifyErrorNotification("Ошибка! \nНеверно указан логин или пароль");
+        LoginPage loginPage = open("http://localhost:9999", LoginPage.class);
+        var authInfo = DataHelper.generateRandomUser();
+        loginPage.invalidLogin(authInfo);
+        loginPage.errorMessage.shouldHave(Condition.text("Ошибка! \nНеверно указан логин или пароль"));
     }
 
     @Test

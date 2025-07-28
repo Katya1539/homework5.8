@@ -20,7 +20,7 @@ public class SQLHelper {
 
     @SneakyThrows
     public static String getVerificationCode() {
-        var codeSQL = "SELECT code FROM auth_codes ORDER BY created DESK LIMIT 1";
+        String codeSQL = "SELECT code FROM auth_codes ORDER BY created DESC LIMIT 1";
         try (var conn = getConn()) {
             return QUERY_RUNNER.query(conn, codeSQL, new ScalarHandler<>());
         }
