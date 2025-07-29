@@ -6,54 +6,75 @@ import data.SQLHelper;
 import org.junit.jupiter.api.*;
 import page.LoginPage;
 
+
+import java.sql.SQLException;
+
 import static com.codeborne.selenide.Selenide.open;
-import static data.SQLHelper.cleanAuthCodes;
-import static data.SQLHelper.cleanDatabase;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BankLoginTest {
-    LoginPage loginPage;
+    private LoginPage loginPage;
+    private static final String BASE_URL = System.getProperty("baseUrl", "http://localhost:9999"); // Получаем URL из системного свойства
+    private String validLogin;
+    private String validPassword;
+    private static SQLHelper sqlHelper;
 
     @AfterAll
     static void tearDownAll() {
-        cleanDatabase();
+        try {
+            sqlHelper.cleanDatabase();
+        } catch (SQLException e) {
+            System.err.println("Ошибка при очистке базы данных: " + e.getMessage());
+        }
     }
 
     @AfterEach
     void tearDown() {
-        cleanAuthCodes();
+        try {
+            sqlHelper.cleanAuthCodes();
+        } catch (SQLException e) {
+            System.err.println("Ошибка при очистке кодов аутентификации: " + e.getMessage());
+        }
+    }
+
+    @BeforeAll
+    static void beforeAll() {
+        String dbUrl = System.getProperty("db.url", "jdbc:mysql://localhost:3306/app");
+        String dbUser = System.getProperty("db.user", "app");
+        String dbPassword = System.getProperty("db.password", "pass");
+        sqlHelper = new SQLHelper(dbUrl, dbUser, dbPassword);
     }
 
     @BeforeEach
     void setUp() {
-        loginPage = open("http://localhost:9999", LoginPage.class);
+        loginPage = open(BASE_URL, LoginPage.class);
+        validLogin = System.getProperty("valid.login", "vasya");
+        validPassword = System.getProperty("valid.password", "qwerty123");
     }
 
     @Test
-    @DisplayName("Should successfully login to dashboard with exist login and password from sut test data")
-    void shouldSuccessfulLogin() {
-        var authInfo = DataHelper.getAuthInfoWithTestData();
+    @DisplayName("Successful login")
+    void shouldSuccessfulLogin() throws SQLException {
+        var authInfo = new DataHelper.AuthInfo(validLogin, validPassword);
         var verificationPage = loginPage.validLogin(authInfo);
-        var verificationCode = SQLHelper.getVerificationCode();
+        var verificationCode = sqlHelper.getVerificationCode();
         verificationPage.validVerify(verificationCode);
     }
 
     @Test
-    @DisplayName("Should get error notification if user does not exist")
-    void shouldGetErrorNotificationIfLoginWithRandomUserWithoutAddingToBase() {
-        LoginPage loginPage = open("http://localhost:9999", LoginPage.class);
+    @DisplayName("Error on invalid login")
+    void shouldGetErrorNotificationIfLoginWithRandomUser() {
         var authInfo = DataHelper.generateRandomUser();
-        loginPage.invalidLogin(authInfo);
-        loginPage.errorMessage.shouldHave(Condition.text("Ошибка! \nНеверно указан логин или пароль"));
+        loginPage.invalidLogin(authInfo)
+                .getErrorMessage().shouldHave(Condition.text("Неверно указан логин или пароль"));
     }
 
     @Test
-    @DisplayName("Should get error notification if login with exist in base and active user and random verification code")
-    void ShouldGetErrorNotificationIfLoginWithExistInBaseAndActiveUserAndRandomVerificationCode() {
-        var authInfo = DataHelper.getAuthInfoWithTestData();
+    @DisplayName("Error on invalid verification code")
+    void ShouldGetErrorNotificationIfLoginWithExistUserAndRandomVerificationCode() {
+        var authInfo = new DataHelper.AuthInfo(validLogin, validPassword);
         var verificationPage = loginPage.validLogin(authInfo);
         var verificationCode = DataHelper.generateRandomVerificationCode();
         verificationPage.verify(verificationCode.getCode());
-        verificationPage.verifyErrorNotification("Ошибка! \nНеверно указан код! Попробуйте ещё раз.");
+        verificationPage.verifyErrorNotification("Неверно указан код! Попробуйте ещё раз.");
     }
 }
