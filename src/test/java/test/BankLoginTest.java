@@ -1,80 +1,54 @@
 package test;
 
-import com.codeborne.selenide.Condition;
 import data.DataHelper;
 import data.SQLHelper;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import page.LoginPage;
 
-
-import java.sql.SQLException;
-
 import static com.codeborne.selenide.Selenide.open;
+import static data.SQLHelper.cleanDatabase;
 
 public class BankLoginTest {
-    private LoginPage loginPage;
-    private static final String BASE_URL = System.getProperty("baseUrl", "http://localhost:9999"); // Получаем URL из системного свойства
-    private String validLogin;
-    private String validPassword;
-    private static SQLHelper sqlHelper;
+    LoginPage loginPage;
+    DataHelper.AuthInfo authInfo = DataHelper.getAuthInfoWithTestData();
 
     @AfterAll
     static void tearDownAll() {
-        try {
-            sqlHelper.cleanDatabase();
-        } catch (SQLException e) {
-            System.err.println("Ошибка при очистке базы данных: " + e.getMessage());
-        }
+        cleanDatabase();
     }
-
-    @AfterEach
-    void tearDown() {
-        try {
-            sqlHelper.cleanAuthCodes();
-        } catch (SQLException e) {
-            System.err.println("Ошибка при очистке кодов аутентификации: " + e.getMessage());
-        }
-    }
-
-    @BeforeAll
-    static void beforeAll() {
-        String dbUrl = System.getProperty("db.url", "jdbc:mysql://localhost:3306/app");
-        String dbUser = System.getProperty("db.user", "app");
-        String dbPassword = System.getProperty("db.password", "pass");
-        sqlHelper = new SQLHelper(dbUrl, dbUser, dbPassword);
-    }
-
     @BeforeEach
     void setUp() {
-        loginPage = open(BASE_URL, LoginPage.class);
-        validLogin = System.getProperty("valid.login", "vasya");
-        validPassword = System.getProperty("valid.password", "qwerty123");
+        loginPage = open("http://localhost:9999", LoginPage.class);
     }
 
     @Test
-    @DisplayName("Successful login")
-    void shouldSuccessfulLogin() throws SQLException {
-        var authInfo = new DataHelper.AuthInfo(validLogin, validPassword);
+    @DisplayName("Should successfully login to dashboard with exist login and password from sut test data")
+    void shouldSuccessfulLogin() {
         var verificationPage = loginPage.validLogin(authInfo);
-        var verificationCode = sqlHelper.getVerificationCode();
-        verificationPage.validVerify(verificationCode);
+        var verificationCode = SQLHelper.getVerificationCode();
+        verificationPage.validVerify(verificationCode.getCode());
     }
 
     @Test
-    @DisplayName("Error on invalid login")
-    void shouldGetErrorNotificationIfLoginWithRandomUser() {
+    @DisplayName("Should get error notification if user is not exist in base")
+    void shouldGetErrorNotificationIfLoginWithRandomUserWithoutAddingToBase() {
         var authInfo = DataHelper.generateRandomUser();
-        loginPage.invalidLogin(authInfo)
-                .getErrorMessage().shouldHave(Condition.text("Неверно указан логин или пароль"));
+        loginPage.login(authInfo);
+        loginPage.verifyErrorNotification("Ошибка! \nНеверно указан логин или пароль");
     }
 
     @Test
-    @DisplayName("Error on invalid verification code")
-    void ShouldGetErrorNotificationIfLoginWithExistUserAndRandomVerificationCode() {
-        var authInfo = new DataHelper.AuthInfo(validLogin, validPassword);
+    @DisplayName("Should get error notification if login with exist in base and active user and random verification code")
+    void shouldGetErrorNotificationIfLoginWithExistUserAndRandomVerificationCode() {
         var verificationPage = loginPage.validLogin(authInfo);
-        var verificationCode = DataHelper.generateRandomVerificationCode();
+        var verificationCode = DataHelper.generateRandonmVerificationCode();
         verificationPage.verify(verificationCode.getCode());
-        verificationPage.verifyErrorNotification("Неверно указан код! Попробуйте ещё раз.");
+        verificationPage.verifyErrorNotification("Ошибка! \nНеверно указан код! Попробуйте ещё раз.");
     }
+
 }
+
+

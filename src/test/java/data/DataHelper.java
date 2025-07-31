@@ -1,12 +1,13 @@
 package data;
 
 import com.github.javafaker.Faker;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.Value;
+import page.VerificationPage;
 
 import java.util.Locale;
-import java.util.Random;
 
 public class DataHelper {
     private static final Faker FAKER = new Faker(new Locale("en"));
@@ -14,8 +15,8 @@ public class DataHelper {
     private DataHelper() {
     }
 
-    public static AuthInfo getAuthInfoWithTestData(String login, String password) {
-        return new AuthInfo(login, password);
+    public static AuthInfo getAuthInfoWithTestData() {
+        return new AuthInfo("vasya", "qwerty123");
     }
 
     private static String generateRandomLogin() {
@@ -30,25 +31,11 @@ public class DataHelper {
         return new AuthInfo(generateRandomLogin(), generateRandomPassword());
     }
 
-    public static VerificationCode generateRandomVerificationCode() {
-        String code = FAKER.number().digits(5); // Генерирует 5 случайных цифр
-        return new VerificationCode(code);
+    public static VerificationCode generateRandonmVerificationCode() {
+        return new VerificationCode(FAKER.numerify("######"));
     }
 
-    public static String generateRandomVerificationCodeString() {
-        int length = 6;
-        String characters = "0123456789";
-        Random rnd = new Random();
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
-            sb.append(characters.charAt(rnd.nextInt(characters.length())));
-        }
-        return sb.toString();
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
+    @Value
     public static class AuthInfo {
         String login;
         String password;
@@ -60,4 +47,6 @@ public class DataHelper {
     public static class VerificationCode {
         String code;
     }
-}
+ }
+
+
