@@ -2,7 +2,6 @@ package page;
 
 import com.codeborne.selenide.SelenideElement;
 import data.DataHelper;
-import sun.security.jgss.GSSUtil;
 
 import static com.codeborne.selenide.Condition.exactText;
 import static com.codeborne.selenide.Condition.visible;
